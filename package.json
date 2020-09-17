@@ -1,0 +1,29 @@
+{
+  "name": "colorextractor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "pkg-win": "pkg . --targets node10-win-x64 --output ./colorExtractor.exe"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NurimOnsemiro/colorExtractor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NurimOnsemiro/colorExtractor/issues"
+  },
+  "homepage": "https://github.com/NurimOnsemiro/colorExtractor#readme",
+  "dependencies": {
+    "color-convert": "^2.0.1",
+    "fs": "0.0.1-security",
+    "get-image-colors": "^2.0.1",
+    "path": "^0.12.7"
+  },
+  "bin": {
+    "app": "./app.js"
+  }
+}
