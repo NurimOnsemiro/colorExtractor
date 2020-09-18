@@ -45,26 +45,25 @@ function pickColor(color) {
     const grayLine = 70;
 
     //유채색
-    if (color.s > saturation /*&& color.v > value*/ ) {
-        if (color.h >= 334 || color.h < 20) {
+    if(color.s > saturation){
+        //INFO: value 검사를 않하는게 더 정확한 결과가 나타난다.
+        if(color.h >= 334 || color.h < 25){
             ret = 1; //red
-        } else if (color.h >= 20 && color.h < 75) {
+        } else if(color.h >= 25 && color.h < 75){
             ret = 3; //yellow
-        } else if (color.h >= 75 && color.h < 170) {
+        } else if(color.h >= 75 && color.h < 170){
             ret = 4; //green
-        } else if (color.h >= 170 && color.h < 275) {
-            if (color.v > 25)   ret = 5; //blue
-            else                ret = 9; //black
-        } else if (color.h >= 275 && color.h < 334) {
-            if (color.v > 20)   ret = 7; //purple
-            else                ret = 9; //black
+        } else if(color.h >= 170 && color.h < 275){
+            ret = 5; //blue
+        } else if(color.h >= 275 && color.h < 334){
+            ret = 7; //purple
         } else {
             ret = 0; //none
         }
     } else {
-        if (color.v < blackLine) {
+        if(color.v < blackLine){
             ret = 9; //black
-        } else if (color.v >= blackLine && color.v <= grayLine) {
+        } else if (color.v >= blackLine && color.v <= grayLine){
             ret = 10; //gray
         } else {
             ret = 8; //white
@@ -73,7 +72,6 @@ function pickColor(color) {
 
     return ret;
 }
-
 getColors(filename, options).then(colors => {
     let colorVote = new Map();
     for (let color of colors) {
@@ -84,7 +82,7 @@ getColors(filename, options).then(colors => {
             s: hsv[1],
             v: hsv[2]
         }
-        console.log(hsvRate);
+        let tempStr = JSON.stringify(hsvRate);
         let ret = pickColor(hsvRate);
         if (!colorVote.has(ret)) {
             colorVote.set(ret, 1);
@@ -92,7 +90,7 @@ getColors(filename, options).then(colors => {
             let incValue = colorVote.get(ret) + 1;
             colorVote.set(ret, incValue);
         }
-        console.log(colorMap.get(ret));
+        console.log(tempStr + colorMap.get(ret));
     }
 
     let maxVoteColor = 0;
