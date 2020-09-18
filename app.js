@@ -48,14 +48,14 @@ function pickColor(color) {
     if (color.s > saturation /*&& color.v > value*/ ) {
         if (color.h >= 334 || color.h < 20) {
             ret = 1; //red
-        } else if (color.h >= 20 && color.h < 60) {
+        } else if (color.h >= 20 && color.h < 75) {
             ret = 3; //yellow
-        } else if (color.h >= 60 && color.h < 180) {
+        } else if (color.h >= 75 && color.h < 170) {
             ret = 4; //green
-        } else if (color.h >= 180 && color.h < 285) {
+        } else if (color.h >= 170 && color.h < 275) {
             if (color.v > 25)   ret = 5; //blue
             else                ret = 9; //black
-        } else if (color.h >= 285 && color.h < 334) {
+        } else if (color.h >= 275 && color.h < 334) {
             if (color.v > 20)   ret = 7; //purple
             else                ret = 9; //black
         } else {
@@ -84,7 +84,7 @@ getColors(filename, options).then(colors => {
             s: hsv[1],
             v: hsv[2]
         }
-        //console.log(hsvRate);
+        console.log(hsvRate);
         let ret = pickColor(hsvRate);
         if (!colorVote.has(ret)) {
             colorVote.set(ret, 1);
@@ -92,7 +92,7 @@ getColors(filename, options).then(colors => {
             let incValue = colorVote.get(ret) + 1;
             colorVote.set(ret, incValue);
         }
-        //console.log(colorMap.get(ret));
+        console.log(colorMap.get(ret));
     }
 
     let maxVoteColor = 0;
