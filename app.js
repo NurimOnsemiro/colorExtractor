@@ -14,7 +14,7 @@ const colorConvert = require('color-convert');
 
 let filedata = fs.readFileSync(filename).toString('utf8');
 console.log(`Image Length : ${filedata.length}`);
-const numImgParts = filedata.length > 1800 ? 36 : 16;
+const numImgParts = filedata.length > 1800 ? 37 : 16;
 
 const options = {
     count: numImgParts,
@@ -47,15 +47,15 @@ function pickColor(color) {
     //유채색
     if(color.s > saturation){
         //INFO: value 검사를 않하는게 더 정확한 결과가 나타난다.
-        if(color.h >= 334 || color.h < 25){
+        if(color.h >= 334 || color.h < 20){
             ret = 1; //red
-        } else if(color.h >= 25 && color.h < 75){
+        } else if(color.h >= 20 && color.h < 60){
             ret = 3; //yellow
-        } else if(color.h >= 75 && color.h < 170){
+        } else if(color.h >= 60 && color.h < 180){
             ret = 4; //green
-        } else if(color.h >= 170 && color.h < 275){
+        } else if(color.h >= 180 && color.h < 280){
             ret = 5; //blue
-        } else if(color.h >= 275 && color.h < 334){
+        } else if(color.h >= 280 && color.h < 334){
             ret = 7; //purple
         } else {
             ret = 0; //none
