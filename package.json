@@ -21,7 +21,9 @@
     "color-convert": "^2.0.1",
     "fs": "0.0.1-security",
     "get-image-colors": "^2.0.1",
-    "path": "^0.12.7"
+    "jimp": "^0.16.1",
+    "path": "^0.12.7",
+    "sharp": "^0.26.1"
   },
   "bin": {
     "app": "./app.js"

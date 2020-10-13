@@ -11,10 +11,13 @@ const fs = require('fs');
 const path = require('path');
 const getColors = require('get-image-colors');
 const colorConvert = require('color-convert');
+const sharp = require('sharp');
+const jimp = require('jimp');
 
 let filedata = fs.readFileSync(filename).toString('utf8');
 console.log(`Image Length : ${filedata.length}`);
-const numImgParts = filedata.length > 1800 ? 37 : 16;
+//const numImgParts = filedata.length > 1800 ? 37 : 17;
+const numImgParts = filedata.length > 1800 ? 37 : 17;
 
 const options = {
     count: numImgParts,
@@ -38,14 +41,28 @@ colorMap.set(10, 'GRAY');
  * INFO: 색상값을 라벨로 분류함
  * @param color 색상정보 (h,s,v,rate)
  */
-function pickColor(color) {
+function pickColor(color, newSat = 30) {
     let ret = 0;
-    const saturation = 30;
-    const blackLine = 30;
-    const grayLine = 70;
+    let saturation = newSat;
+    let blackLine = 30;
+    let grayLine = 70;
 
-    //유채색
+    // if(grayCnt / maxCnt > 0.7){
+    //     saturation = 10;
+    // } else if(grayCnt / maxCnt > 0.3){
+    //     saturation = 20;
+    // } else {
+    //     saturation = 30;
+    // }
+
+    let isColored = false;
+
+    //INFO: 유채색
     if(color.s > saturation){
+        isColored = true;
+    }
+
+    if(isColored){
         //INFO: value 검사를 않하는게 더 정확한 결과가 나타난다.
         if(color.h >= 334 || color.h < 20){
             ret = 1; //red
@@ -72,7 +89,88 @@ function pickColor(color) {
 
     return ret;
 }
-getColors(filename, options).then(colors => {
+
+function getSaturation(colors){
+    let grayCnt = 0;
+    let numColors = colors.length;
+    for (let color of colors) {
+        let rgb = color['_rgb'];
+        let hsv = colorConvert.rgb.hsv(rgb[0], rgb[1], rgb[2]);
+        let hsvRate = {
+            h: hsv[0],
+            s: hsv[1],
+            v: hsv[2]
+        }
+        let ret = pickColor(hsvRate, 30);
+        if(ret === 10){
+            grayCnt++;
+        }
+    }
+
+    console.log(`grayCnt: ${grayCnt}`);
+    if(grayCnt/numColors > 0.5){
+        return 30;
+    } else if(grayCnt/numColors > 0.3){
+        return 30;
+    } else {
+        return 30;
+    }
+}
+
+function calcColor2(colors){
+    let colorVote = new Map();
+    console.log(`colors length: ${colors.length}`);
+    
+    let newSat = getSaturation(colors);
+    console.log(`newSat: ${newSat}`);
+    
+    for (let color of colors) {
+        let rgb = color['_rgb'];
+        let hsv = colorConvert.rgb.hsv(rgb[0], rgb[1], rgb[2]);
+        let hsvRate = {
+            h: hsv[0],
+            s: hsv[1],
+            v: hsv[2]
+        }
+        let tempStr = JSON.stringify(hsvRate);
+        let ret = pickColor(hsvRate, newSat);
+        if (!colorVote.has(ret)) {
+            colorVote.set(ret, 1);
+        } else {
+            let incValue = colorVote.get(ret) + 1;
+            colorVote.set(ret, incValue);
+        }
+        console.log(tempStr + colorMap.get(ret));
+    }
+
+    let maxVoteColor = 0;
+    let maxVoteValue = -1;
+    let numExcludeColor = 0;
+    console.log(Array.from(colorVote.keys()).length);
+    for (let key of colorVote.keys()) {
+        console.log(`key: ${colorMap.get(key)}, value: ${colorVote.get(key)}`);
+
+        if (key === excludeColor) {
+            numExcludeColor+= colorVote.get(key);
+            continue;
+        }
+        let value = colorVote.get(key);
+        if (maxVoteValue >= value) continue;
+        maxVoteValue = value;
+        maxVoteColor = key;
+    }
+    
+    let maxValue = Math.round(maxVoteValue/(numImgParts - numExcludeColor) * 100);
+    let ret = {
+        color: colorMap.get(maxVoteColor),
+        value: maxValue,
+        numExcludeColor: numExcludeColor
+    };
+    console.log(ret);
+    return ret;
+}
+
+function calcColor(colors){
     let colorVote = new Map();
     for (let color of colors) {
         let rgb = color['_rgb'];
@@ -93,19 +191,83 @@ getColors(filename, options).then(colors => {
         console.log(tempStr + colorMap.get(ret));
     }
 
+    let numColored = 0;
+    let numNotColored = 0;
     let maxVoteColor = 0;
     let maxVoteValue = -1;
     let numExcludeColor = 0;
+    let chromColorTopKey = 0;
+    let chromColorTopValue = 0;
+    let achromColorTopKey = 0;
+    let achromColorTopValue = 0;
+    console.log(Array.from(colorVote.keys()).length);
     for (let key of colorVote.keys()) {
-        if (key === excludeColor) {
-            numExcludeColor++;
-            continue;
+        console.log(`key: ${colorMap.get(key)}, value: ${colorVote.get(key)}`);
+        if(key >= 8 && key <= 10){
+            numNotColored+=colorVote.get(key);
+
+            if (key === excludeColor) {
+                numExcludeColor+= colorVote.get(key);
+                continue;
+            }
+            let value = colorVote.get(key);
+            if (achromColorTopValue >= value) continue;
+            achromColorTopValue = value;
+            achromColorTopKey = key;
+        }else {
+            numColored+=colorVote.get(key);
+
+            if (key === excludeColor) {
+                numExcludeColor+= colorVote.get(key);
+                continue;
+            }
+            let value = colorVote.get(key);
+            if (chromColorTopValue >= value) continue;
+            chromColorTopValue = value;
+            chromColorTopKey = key;
         }
-        let value = colorVote.get(key);
-        if (maxVoteValue >= value) continue;
-        maxVoteValue = value;
-        maxVoteColor = key;
     }
-    //console.log(colorVote);
-    console.log(`Color : ${colorMap.get(maxVoteColor)} (${Math.round(maxVoteValue/(numImgParts - numExcludeColor) * 100)}%)`);
-});
+    console.log(`numColored : ${numColored}, numNotColored : ${numNotColored}`);
+    console.log(`colorTopKey: ${chromColorTopKey}, colorTopValue: ${chromColorTopValue}`);
+    console.log(`notColorTopKey: ${achromColorTopKey}, notColorTopValue: ${achromColorTopValue}`);
+    if(chromColorTopValue >= achromColorTopValue && numNotColored <= Math.round(numColored * 1.3)){
+        maxVoteColor = chromColorTopKey;
+        maxVoteValue = chromColorTopValue;
+    } else {
+        maxVoteColor = achromColorTopKey;
+        maxVoteValue = achromColorTopValue;
+    }
+    
+    //maxVoteValue = colorTopValue > notColorTopValue ? colorTopValue : notColorTopValue;
+    let maxValue = Math.round(maxVoteValue/(numImgParts - numExcludeColor) * 100);
+    let ret = {
+        color: colorMap.get(maxVoteColor),
+        value: maxValue,
+        numExcludeColor: numExcludeColor,
+        numColored: numColored,
+        numNotColored: numNotColored
+    };
+    console.log(ret);
+    return ret;
+}
+
+jimp.read(filename, async (err, value, coords) => {
+    if(err){
+        console.error(err);
+        process.exit(0);
+    }
+
+    let data = await value.colour([{
+        apply:'lighten', params: [10]
+    }]).getBase64Async(jimp.MIME_JPEG);
+
+    getColors(data, options).then(colors => {
+        let ret = calcColor2(colors);
+        console.log(`Color : ${ret.color} (${ret.value}%)`);
+    });
+})
+
+// getColors(filename, options).then(colors => {
+//     let ret = calcColor2(colors);
+//     console.log(`Color : ${ret.color} (${ret.value}%)`);
+// });
